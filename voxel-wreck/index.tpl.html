@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#2b2440">
+<link rel="icon" href="data:,">
+<title>VOXEL WRECK · 体素拆城（离线单文件）</title>
+<style>__CSS__</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="flash"></div>
+
+<div id="hud" class="hidden">
+  <div class="panel stat">
+    <div class="kicker">破坏进度</div>
+    <div class="big"><span id="pct">0</span><em>%</em></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="sub"><span id="blocks">0</span> 块已粉碎 · <span id="left">-</span> 块残留</div>
+    <div class="walletrow">
+      <span class="cur">₡</span><span id="money">5,000,000</span>
+      <span id="moneyPop"></span>
+    </div>
+    <div class="hprow">
+      <span class="kicker">生命值</span>
+      <span id="hpText">100</span>
+    </div>
+    <div class="hpbar"><i id="hpFill"></i></div>
+    <div class="sub" id="enemyInfo">武装守卫 0</div>
+  </div>
+
+  <div class="panel mapbox">
+    <canvas id="map" width="160" height="160"></canvas>
+    <div class="mapfoot"><span class="dot"></span><span id="mapName">SECTOR 07</span></div>
+  </div>
+
+  <div class="panel weaponbox">
+    <div class="kicker">当前装备</div>
+    <div class="wname" id="wName">电钻</div>
+    <div class="wmeta" id="wMeta">无限使用 · 左键钻墙</div>
+    <div class="whint">B 黑市 · 滚轮 / 1-7 换武器</div>
+  </div>
+
+  <div id="hotbar"></div>
+
+  <div id="fps" class="panel">-- FPS</div>
+
+  <div id="crosshair">
+    <i class="ch t"></i><i class="ch b"></i><i class="ch l"></i><i class="ch r"></i><i class="chdot"></i>
+  </div>
+  <div id="toast"></div>
+</div>
+
+<div id="shop" class="hidden">
+  <div class="shopcard">
+    <div class="shophead">
+      <div>
+        <div class="kicker">BLACK MARKET / SECTOR 07</div>
+        <h2>黑市军火</h2>
+      </div>
+      <div class="walletbig"><span class="cur">₡</span><span id="shopMoney">0</span></div>
+    </div>
+    <div id="shopList" class="shoplist"></div>
+    <div class="shopfoot">每拆掉一块方块都能换钱 · 价格就是这么离谱</div>
+    <button id="shopClose">返回战场（B）</button>
+  </div>
+</div>
+
+<div id="ach" class="hidden">
+  <div class="shopcard">
+    <div class="shophead">
+      <div>
+        <div class="kicker">ACHIEVEMENTS</div>
+        <h2>成就</h2>
+      </div>
+      <div class="walletbig"><span id="achCount">0</span><span class="cur" id="achTotal">/9</span></div>
+    </div>
+    <div id="achList" class="shoplist"></div>
+    <div class="shopfoot">破坏越多、买得越多，成就越亮</div>
+    <button id="achClose">返回战场（V）</button>
+  </div>
+</div>
+
+<div id="net" class="hidden">
+  <div class="shopcard">
+    <div class="shophead">
+      <div>
+        <div class="kicker">CO-OP / P2P</div>
+        <h2>联机（无服务器）</h2>
+      </div>
+      <div class="walletbig" id="netState">未连接</div>
+    </div>
+    <div class="netrow">
+      <button id="netHost" class="ghost">① 创建房间（生成邀请码）</button>
+      <button id="netJoin" class="ghost">② 加入房间（用对方的邀请码）</button>
+    </div>
+    <textarea id="netOffer" class="netbox" placeholder="房主：把这里生成的邀请码发给朋友 / 加入者：把房主的邀请码粘贴到这里"></textarea>
+    <div class="netrow">
+      <button id="netFinish" class="ghost">房主：粘贴回执码并完成连接</button>
+    </div>
+    <textarea id="netAnswer" class="netbox" placeholder="加入者：把这里生成的回执码发回给房主"></textarea>
+    <div class="shopfoot" id="netHint">房主「创建房间」→ 发送邀请码 → 对方粘贴后「加入房间」→ 回执码发回 → 房主完成连接<br>同一局域网 / 同一台电脑可用 · 纯 P2P 不经过服务器 · 只同步连接之后的破坏</div>
+    <button id="netClose">关闭联机面板</button>
+  </div>
+</div>
+
+<div id="hurt"></div>
+
+<div id="death">
+  <div class="deathcard">
+    <div class="kicker">YOU ARE DOWN</div>
+    <div class="dt">你被击倒了</div>
+    <div class="ds">2 秒后在出生点复活 · 资金与武器保留</div>
+  </div>
+</div>
+
+<div id="overlay">
+  <div class="card">
+    <div class="logo">VOXEL <span>WRECK</span></div>
+    <div class="tag">体素拆城 · 单文件 · 完全离线</div>
+    <div id="status" class="status">正在生成城市…</div>
+    <div class="maps" id="mapPicker"></div>
+    <ul class="keys">
+      <li><b>W A S D</b> 移动 · <b>Shift</b> 冲刺 · <b>空格</b> 跳跃</li>
+      <li><b>左键</b> 使用当前武器 · <b>右键</b> 引爆所有定时炸药</li>
+      <li><b>1-7 / 滚轮</b> 切换武器 · <b>B</b> 黑市商店 · <b>V</b> 成就</li>
+      <li><b>R</b> 重建当前地图 · <b>G</b> 脱离卡点 · <b>Esc</b> 释放鼠标</li>
+    </ul>
+    <button id="start" disabled>生成中…</button>
+    <button id="achBtn" class="ghost">查看成就（V）</button>
+    <button id="netBtn" class="ghost">联机（P2P）</button>
+    <div class="hint">开局只有一把电钻和一把大锤，去赚点钱吧</div>
+  </div>
+</div>
+
+<script>__JS__</script>
+</body>
+</html>
